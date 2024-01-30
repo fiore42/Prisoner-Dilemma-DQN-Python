@@ -1,0 +1,38 @@
+# Node modules
+node_modules/
+
+# Python bytecode compiled versions 
+__pycache__/
+
+# old stuff
+old/
+
+# Other common ignores (optional)
+*.log
+*.old
+*.env
+*.sh
+*.out
+*.csv
+.DS_Store
+
+# Ignore images case insentive
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[gG][iI][fF]
+*.[pP][nN][gG]
+*.[wW][eE][bB][pP]
+
+# log files
+log/
+
+# pdfs
+PDFs/
+
+# models
+models/
+
+# But not in assets folder
+!/assets/prisoner_dilemma.png
+!/assets/prisoner_dilemma_social_preview.jpg
+!/assets/comparison_q_table_qdn.png
