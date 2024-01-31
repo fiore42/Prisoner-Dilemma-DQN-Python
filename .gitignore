@@ -36,3 +36,6 @@ models/
 !/assets/prisoner_dilemma.png
 !/assets/prisoner_dilemma_social_preview.jpg
 !/assets/comparison_q_table_qdn.png
+
+# Exclude the script to run 100 times the same arena to compare q_table and DQN
+!/run_100.sh

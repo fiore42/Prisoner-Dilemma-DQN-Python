@@ -10,6 +10,8 @@ GAMMA = 0.9          # Discount factor
 LEARNING_RATE = 0.01
 VALID_ACTIONS = 2 # Two possible actions: Cooperate or Defect
 INITIAL_BIAS_FOR_C = 0.1 # we want our network to have a preference for C
+# without a bias for C, initially the model could use D and trigger strategies 
+# such as grudger, tit-for-tat, and so on. This greatly reduces the overall result.
 INITIAL_BIAS_FOR_D = 0.0
 VALUE_FOR_C = 0
 VALUE_FOR_D = 1
