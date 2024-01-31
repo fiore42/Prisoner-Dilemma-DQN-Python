@@ -11,7 +11,7 @@ The program is designed to simulate 9 strategies facing each other in the Prison
 
 The image above shows the results of running 100 times the same arena with the same 9 strategies (including rl_strategy) and comparing the results obtain by the q_table approach (in blue) vs the results obtained by the DQN approach (in red). 
 
-The p-value is 1.0006755684628032e-22 (!) so the difference is clearly statistically significant. Keep in mind that with a different set of 9 strategies the two RL might behave differently. You can find all the data and calculation in find_p_value.py
+The p-value is 1.0006755684628032e-22 (!) so the difference is clearly statistically significant. Keep in mind that with a different set of 9 strategies the two RL might behave differently. You can find all the data and calculation in find_p_value.py which includes in its comments also the bash script to run the arena 100 times.
 
 For more details on this project, check [this Medium article](https://fiore42.medium.com/from-zero-to-reinforcement-learning-rl-with-gpt4-2977405a0223)
 
