@@ -22,8 +22,10 @@ Interestingly enough, outside of reinforcement_learning.py, the rest of the code
 
 - **Multiple Strategies**: Over 25 predefined strategies to simulate various scenarios in the Prisoner's Dilemma.
 - **Reinforcement Learning Strategy**: A strategy built using a DQN approach to reinforcement learning, providing an advanced and adaptive strategy model.
-- **Strategy Selection**: By default, the program randomly selects 9 strategies for each run, always including the `rl_strategy`. However, users have the option to specify a custom list of strategies using `-a`.
-- **Verbose Output**: Supports `-v` (verbose) and `-vv` (very verbose) flags for additional debugging and operational insights.
+- **Strategy Selection**: By default, the program randomly selects 9 strategies for each run, always including the `rl_strategy`. However, users have the option to specify custom lists of strategies using `-a` or `--against`.
+- **Debug Mode**: Enables debug mode with the `-d` or `--debug` flag, leading to fewer strategies and rounds for quicker iterations.
+- **Verbose Output**: Supports verbose (`-v`) and very verbose (`-vv`) flags for additional debugging and operational insights, including machine learning output in the very verbose mode.
+- **Strategy Listing**: Use `-p` or `--print` to print all available strategies, assisting in custom strategy selection.
 
 ## Getting Started
 
@@ -48,10 +50,16 @@ Run the program with the default settings:
 python main.py
 ```
 
-To select specific strategies, use the `-a` option followed by the strategy names:
+To select specific strategies, use the `-a` or `-against` option followed by the strategy names:
 
 ```bash
 python main.py -a strategy1 strategy2 ... strategyN
+```
+
+Enable debug mode for quicker iterations:
+
+```bash
+python main.py -d
 ```
 
 Use the verbose options for more detailed output:
@@ -62,6 +70,12 @@ python main.py -v
 
 # Very Verbose
 python main.py -vv
+```
+
+To list all available strategies:
+
+```bash
+python main.py -p
 ```
 
 ## Contributing

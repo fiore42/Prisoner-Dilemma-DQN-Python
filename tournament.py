@@ -45,6 +45,19 @@ def play_round(strategy1, name1, strategy2, name2, history1, history2, very_verb
     # tournament_result = tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_verbose)
 
 
+def print_strategies ():
+
+    # Automatically build the strategies dictionary
+    all_strategies = build_strategies_dict()
+
+    # Remove 'rl_strategy' from the pool to avoid duplicating it
+    available_strategies = [name for name in all_strategies.keys() if name != 'rl_strategy']
+
+    print("\nAvailable strategies are:")
+    for strategy in available_strategies:
+        print(f"- {strategy}")
+    print ("")
+
 def select_strategies(all_strategies, max_strategies, opponent_strategies):
     selected_strategies = ['rl_strategy']
 
@@ -58,9 +71,7 @@ def select_strategies(all_strategies, max_strategies, opponent_strategies):
     else:
         # Print an error and exit the function
         print("\nSelect valid opponent strategies. Some of the specified strategies are not available.")
-        print("\nAvailable strategies are:")
-        for strategy in available_strategies:
-            print(f"- {strategy}")
+        print_strategies()
         return None
 
     # Fill the rest of selected_strategies with random choices from available strategies
@@ -94,9 +105,12 @@ def tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_ve
     # # Print the selected strategies
     # print("Selected strategies for this tournament:", selected_strategies)
 
+    if not verbose: print("") # new line for all the dots 
+
     # Play each pair of strategies against each other
     for name1 in selected_strategies:
         for name2 in selected_strategies:
+            if not verbose: print('.', end='')  # This will print a dot without adding a newline
             history1, history2 = [], []
             total_score1, total_score2 = 0, 0
             match_hands = []
@@ -150,6 +164,8 @@ def tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_ve
 
             # strategy_points[name1] += total_score1
             # strategy_points[name2] += total_score2
+
+    if not verbose: print("") # new line for all the dots 
 
     # for name, (total_points, games_played) in strategy_points.items():
     #     print(f"name: {name}: total_points: {total_points} games_played: {games_played}", file=sys.stderr)
