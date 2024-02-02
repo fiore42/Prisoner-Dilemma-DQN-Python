@@ -15,6 +15,9 @@ INITIAL_BIAS_FOR_C = 0.1 # we want our network to have a preference for C
 INITIAL_BIAS_FOR_D = 0.0
 VALUE_FOR_C = 0
 VALUE_FOR_D = 1
+INITIAL_EPSILON = 1 # Start with 100% exploration
+MIN_EPSILON = 0.01 # Minimum value of epsilon (% of exploration)
+
 
 # Neural Network for DQN
 class DQN(nn.Module):
@@ -67,50 +70,51 @@ class PrisonersDilemmaDQN:
         self.model = DQN(HISTORY_LENGTH, VALID_ACTIONS, INITIAL_BIAS_FOR_C, INITIAL_BIAS_FOR_D)
         self.memory = ReplayMemory(10000)
         self.optimizer = optim.Adam(self.model.parameters(), lr=LEARNING_RATE)
+        self.epsilon = INITIAL_EPSILON
 
     def reset_model_weights(self):
         # Call initialize_weights on the DQN instance
         self.model.reset_weights()
 
-    def _preprocess_history(self, myHistory, opponentHistory, very_verbose):
-        if very_verbose: print(f"myHistory: {''.join(myHistory[-10:])} opponentHistory: {''.join(opponentHistory[-10:])}")
+    def _preprocess_history(self, my_history, opponent_history, very_verbose):
+        if very_verbose: print(f"my_history: {''.join(my_history[-10:])} opponent_history: {''.join(opponent_history[-10:])}")
         # Preprocess history to be fed into the DQN
         # Pad the history with 'C' if it's shorter than HISTORY_LENGTH
-        padded_myHistory = (['C'] * (HISTORY_LENGTH - len(myHistory))) + myHistory
-        padded_opponentHistory = (['C'] * (HISTORY_LENGTH - len(opponentHistory))) + opponentHistory
+        padded_my_history = (['C'] * (HISTORY_LENGTH - len(my_history))) + my_history
+        padded_opponent_history = (['C'] * (HISTORY_LENGTH - len(opponent_history))) + opponent_history
 
         # Combine the last HISTORY_LENGTH actions from each player
-        history = padded_myHistory[-HISTORY_LENGTH:] + padded_opponentHistory[-HISTORY_LENGTH:]
+        history = padded_my_history[-HISTORY_LENGTH:] + padded_opponent_history[-HISTORY_LENGTH:]
         history_numerical = [VALUE_FOR_C if h == 'C' else VALUE_FOR_D for h in history]  # Convert to numerical format (0 for 'C', 1 for 'D')
 
         if very_verbose: print(f"history_numerical: {''.join(str(num) for num in history_numerical)}")
 
         return torch.tensor([history_numerical], dtype=torch.float32)
 
-    def _get_reward(self, myAction, opponentAction):
+    def _get_reward(self, my_action, opponent_action):
         # Define the reward function for the prisoner's dilemma
         # Note that this is DIFFERENT from the values given by the game
         # and are meant to help train te model in the "direction" we are interested into
-        if myAction == 'C' and opponentAction == 'C':
+        if my_action == 'C' and opponent_action == 'C':
             return 1  # Both cooperate
-        elif myAction == 'C' and opponentAction == 'D':
+        elif my_action == 'C' and opponent_action == 'D':
             return -1  # Player cooperates, opponent defects
-        elif myAction == 'D' and opponentAction == 'C':
+        elif my_action == 'D' and opponent_action == 'C':
             return 2  # Player defects, opponent cooperates
-        else:  # myAction == 'D' and opponentAction == 'D'
+        else:  # my_action == 'D' and opponent_action == 'D'
             return 0  # Both defect
 
-    def train_model(self, myHistory, opponentHistory, myAction, opponentAction, very_verbose):
-        if very_verbose: print(f"myAction: {myAction} opponentAction: {opponentAction}")
+    def train_model(self, my_history, opponent_history, my_action, opponent_action, very_verbose):
+        if very_verbose: print(f"my_action: {my_action} opponent_action: {opponent_action}")
                        
 
         # Convert histories and actions to tensors
-        state = self._preprocess_history(myHistory, opponentHistory, very_verbose)
-        next_state = self._preprocess_history(myHistory + [myAction], opponentHistory + [opponentAction], very_verbose)
+        state = self._preprocess_history(my_history, opponent_history, very_verbose)
+        next_state = self._preprocess_history(my_history + [my_action], opponent_history + [opponent_action], very_verbose)
 
-        myActionNumber = VALUE_FOR_C if myAction == 'C' else VALUE_FOR_D
-        action_tensor = torch.tensor([myActionNumber], dtype=torch.int64)
-        reward = self._get_reward(myAction, opponentAction)
+        my_actionNumber = VALUE_FOR_C if my_action == 'C' else VALUE_FOR_D
+        action_tensor = torch.tensor([my_actionNumber], dtype=torch.int64)
+        reward = self._get_reward(my_action, opponent_action)
 
         # Store in memory
         self.memory.push(state, action_tensor, next_state, reward)
@@ -139,28 +143,52 @@ class PrisonersDilemmaDQN:
         if very_verbose:
             print(f"Training loss: {loss.item()}")
 
-    def make_decision(self, myHistory, opponentHistory, very_verbose):
+    def make_decision(self, explore_flag, my_history, opponent_history, very_verbose):
 
-        # Check if myHistory is empty, indicating the start of a new game
-        if not myHistory:
+        # Check if my_history is empty, indicating the start of a new game
+        if not my_history:
             # Call reset_weights to reinitialize the model
             self.reset_model_weights()
             if very_verbose: print("Weights and biases have been reset.")
+            self.epsilon = INITIAL_EPSILON
             # initially gpt did not offer this code and vocally advocated against it
             # saying that a model should be generic enough to face multiple adversary
             # but in reality each adversary plays so differently that resetting weights 
             # is key to the performance of the model
 
-        state = self._preprocess_history(myHistory, opponentHistory,very_verbose)
+        state = self._preprocess_history(my_history, opponent_history,very_verbose)
         with torch.no_grad():
             q_values = self.model(state)
             if very_verbose: print(f"q_values: {q_values}")
         action = q_values.max(1)[1].item()
 
-        if very_verbose:
-            print(f"Decided action: {'C' if action == 0 else 'D'}")
+        action_char = 'C' if action == 0 else 'D'
 
-        return 'C' if action == 0 else 'D'
+        if very_verbose:
+            print(f"Decided action: {action_char}")
+
+        # I implemented epsilon greedy strategy in a different way
+        # I first calculate the decided action and if epsilon triggers exploration
+        # I do the opposite
+        # if opponent has used 'D' at least once, we can contemplate exploration
+        if len(opponent_history) > 0 and 'D' in opponent_history:
+            if very_verbose:
+                print(f"we could explore - epsilon: {self.epsilon}")
+            if explore_flag and random.random() < self.epsilon:
+                # so we know we have the "license" to explore, and we randomly decided to explore
+                # so we will return the opposite value to the prediction
+                if action_char == 'C':
+                    action_char = 'D'
+                else:
+                    action_char = 'C'
+                if very_verbose:
+                    print(f"epsilon: {self.epsilon} random action: {action_char}")
+                # Update epsilon
+                if self.epsilon > MIN_EPSILON:
+                    self.epsilon = max(MIN_EPSILON, self.epsilon / 2)
+
+
+        return action_char
 
 
 

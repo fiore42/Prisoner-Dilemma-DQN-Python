@@ -1,6 +1,6 @@
 
-def rl_strategy(dqn_agent, myHistory, opponentHistory, very_verbose):
-    action = dqn_agent.make_decision(myHistory, opponentHistory, very_verbose)
+def rl_strategy(dqn_agent, explore_flag, myHistory, opponentHistory, very_verbose):
+    action = dqn_agent.make_decision(explore_flag, myHistory, opponentHistory, very_verbose)
     return action
 
 def always_cooperate(myHistory, opponentHistory, very_verbose):

@@ -15,16 +15,22 @@ dqn_agent = PrisonersDilemmaDQN()
 def play_round(strategy1, name1, strategy2, name2, history1, history2, very_verbose):
 
     if name1 == 'rl_strategy' and name2 == 'rl_strategy':
-        move1 = strategy1(dqn_agent, history1, history2, very_verbose)  # Pass both histories to strategy1
-        move2 = strategy2(dqn_agent, history2, history1, very_verbose)  # Pass both histories to strategy2
+        # if RL strategy vs RL strategy, we only let one strategy explore, 
+        # since it's exploration halves epsilon
+        explore1 = True
+        explore2 = False
+        move1 = strategy1(dqn_agent, explore1, history1, history2, very_verbose)  # Pass both histories to strategy1
+        move2 = strategy2(dqn_agent, explore2, history2, history1, very_verbose)  # Pass both histories to strategy2
         dqn_agent.train_model(history1, history2, move1, move2, very_verbose) # when rl_strategy face itself we train only once
     elif name1 == 'rl_strategy':
-        move1 = strategy1(dqn_agent, history1, history2, very_verbose)  # Pass both histories to strategy1
+        explore1 = True
+        move1 = strategy1(dqn_agent, explore1, history1, history2, very_verbose)  # Pass both histories to strategy1
         move2 = strategy2(history2, history1, very_verbose)  # Pass both histories to strategy2
         dqn_agent.train_model(history1, history2, move1, move2, very_verbose) # when rl_strategy face itself we train only once
     elif name2 == 'rl_strategy':
+        explore2 = True
         move1 = strategy1(history1, history2, very_verbose)  # Pass both histories to strategy1
-        move2 = strategy2(dqn_agent, history2, history1, very_verbose)  # Pass both histories to strategy2
+        move2 = strategy2(dqn_agent, explore2, history2, history1, very_verbose)  # Pass both histories to strategy2
         dqn_agent.train_model(history2, history1, move2, move1, very_verbose)
     else:
         move1 = strategy1(history1, history2, very_verbose)  # Pass both histories to strategy1
