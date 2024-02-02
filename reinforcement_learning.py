@@ -171,9 +171,11 @@ class PrisonersDilemmaDQN:
         # I first calculate the decided action and if epsilon triggers exploration
         # I do the opposite
         # if opponent has used 'D' at least once, we can contemplate exploration
-        if len(opponent_history) > 0 and 'D' in opponent_history:
+        if opponent_history and 'D' in opponent_history:
             if very_verbose:
                 print(f"we could explore - epsilon: {self.epsilon}")
+                print(f"opponent_history: {''.join(opponent_history[-10:])}")
+
             if explore_flag and random.random() < self.epsilon:
                 # so we know we have the "license" to explore, and we randomly decided to explore
                 # so we will return the opposite value to the prediction
