@@ -166,7 +166,7 @@ def tournament(strategies, points_system, num_rounds, verbose, very_verbose, opp
     # sort results_temp in the same order from the top strategy down
     results = {}
     for key, _ in sorted_strategies:
-        print(key)
+        # print(key)
         filtered_results = {(name1, name2): values for (name1, name2), values in results_temp.items() if name1 == key}
         for (name1, name2), values in filtered_results.items():
             results[(name1, name2)] = results_temp[(name1, name2)]
