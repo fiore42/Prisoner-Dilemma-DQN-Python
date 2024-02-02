@@ -113,9 +113,20 @@ def tournament(strategies, points_system, num_rounds, verbose, very_verbose, opp
                     if (i + 1) % 20 == 0:
                         print("")  # Newline character after every 20 pairs
 
-            percent_diff = (total_score1 - total_score2) / max(total_score1, total_score2) * 100 if max(total_score1, total_score2) > 0 else 0
+            # percent_diff = (total_score1 - total_score2) / max(total_score1, total_score2) * 100 if max(total_score1, total_score2) > 0 else 0
+            # percent_diff = (total_score1 - total_score2) / total_score2 * 100 if total_score2 > 0 else 0
+            percent_diff = int((total_score1 - total_score2) / total_score2 * 100) if total_score2 > 0 else 0
 
-            results_temp[(name1, name2)] = (total_score1, total_score2, total_score1/num_rounds, total_score2/num_rounds, percent_diff)
+            if percent_diff >= 100:
+                percent_diff_string = "Diff >100"
+            elif percent_diff == -100:
+                percent_diff_string = "YOU LOST"
+            elif percent_diff == 0:
+                percent_diff_string = ""
+            else:
+                percent_diff_string = f"Diff: {percent_diff}%"
+
+            results_temp[(name1, name2)] = (total_score1, total_score2, total_score1/num_rounds, total_score2/num_rounds, percent_diff_string)
             hands_played[(name1, name2)] = match_hands
             # Update total points and number of games
             total_points1, games_played1 = strategy_points[name1]

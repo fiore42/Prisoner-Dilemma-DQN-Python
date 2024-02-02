@@ -48,7 +48,9 @@ def main(verbose, very_verbose, opponent_strategies):
         # Check if 'name1' has changed since the last iteration
         if last_name1 and name1 != last_name1:
             print()  # Print an extra empty line
-        print(f"{name1:{max_length}} vs {name2:{max_length}}: {score1:5} - {score2:5} (Avg: {avg_score1:.2f} - {avg_score2:.2f}) Diff: {percent_diff:.2f}%")
+        # note percent_diff is a string, not a number!
+        # print(f"{name1:{max_length}} vs {name2:{max_length}}: {score1:5} - {score2:5} (Avg: {avg_score1:.2f} - {avg_score2:.2f}) Diff: {percent_diff:.2f}%")
+        print(f"{name1:{max_length}} vs {name2:{max_length}}: {score1:5} - {score2:5} (Avg: {avg_score1:.2f} - {avg_score2:.2f}) {percent_diff}")
         last_name1 = name1  # Update 'last_name1' for the next iteration
 
     # Find the maximum length of strategy names
