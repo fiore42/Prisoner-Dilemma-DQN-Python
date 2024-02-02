@@ -7,11 +7,12 @@ import sys
 from importlib import import_module
 # from reinforcement_learning import train_model, print_q_table
 from reinforcement_learning import PrisonersDilemmaDQN
+from config import POINTS_SYSTEM
 
 # Create a global instance of the DQN agent
 dqn_agent = PrisonersDilemmaDQN()
 
-def play_round(strategy1, name1, strategy2, name2, history1, history2, points_system, very_verbose):
+def play_round(strategy1, name1, strategy2, name2, history1, history2, very_verbose):
 
     if name1 == 'rl_strategy' and name2 == 'rl_strategy':
         move1 = strategy1(dqn_agent, history1, history2, very_verbose)  # Pass both histories to strategy1
@@ -37,45 +38,58 @@ def play_round(strategy1, name1, strategy2, name2, history1, history2, points_sy
     history2.append(move2)
 
     # Calculate scores based on the points system
-    score1, score2 = points_system[move1+move2]
+    score1, score2 = POINTS_SYSTEM[move1+move2]
 
     return score1, score2
 
-def tournament(strategies, points_system, num_rounds, verbose, very_verbose, opponent_strategies):
+    # tournament_result = tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_verbose)
+
+
+def select_strategies(all_strategies, max_strategies, opponent_strategies):
+    selected_strategies = ['rl_strategy']
+
+    # Remove 'rl_strategy' from the pool to avoid duplicating it
+    available_strategies = [name for name in all_strategies.keys() if name != 'rl_strategy']
+
+    # Check if all opponent strategies are available
+    if all(strategy in available_strategies for strategy in opponent_strategies):
+        # Make selected_strategies = 'rl_strategy' and opponent strategies
+        selected_strategies += opponent_strategies
+    else:
+        # Print an error and exit the function
+        print("\nSelect valid opponent strategies. Some of the specified strategies are not available.")
+        print("\nAvailable strategies are:")
+        for strategy in available_strategies:
+            print(f"- {strategy}")
+        return None
+
+    # Fill the rest of selected_strategies with random choices from available strategies
+    # until reaching the limit of min(all_strategies, max_strategies)
+    while len(selected_strategies) < min(len(all_strategies), max_strategies):
+        # Randomly choose a strategy from available_strategies
+        choice = random.choice(available_strategies)
+        # Ensure we don't add duplicates
+        if choice not in selected_strategies:
+            selected_strategies.append(choice)
+    
+    return selected_strategies
+
+def tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_verbose):
+
     results_temp = {}
     hands_played = {}
 
-    # Remove 'rl_strategy' from the pool to avoid duplicating it
-    available_strategies = [name for name in strategies.keys() if name != 'rl_strategy']
+    # Automatically build the strategies dictionary
+    all_strategies = build_strategies_dict()
 
-    if not opponent_strategies:
+    selected_strategies = select_strategies (all_strategies, max_strategies, opponent_strategies)
 
-        # Randomly select 8 other strategies
-        randomly_selected_strategies = random.sample(available_strategies, min(8, len(available_strategies)))
+    if selected_strategies is None:
+        # print(f"\nselected_strategies is None, return")
 
-        # Add 'rl_strategy' to the list of selected strategies
-        selected_strategies = ['rl_strategy'] + randomly_selected_strategies
-    else:
-        # Check if all opponent strategies are available
-        if all(strategy in available_strategies for strategy in opponent_strategies):
-            # Make selected_strategies = 'rl_strategy' and opponent strategies
-            selected_strategies = ['rl_strategy'] + opponent_strategies
-        else:
-            # Print an error and exit the function
-            print("\nSelect valid opponent strategies. Some of the specified strategies are not available.")
-            print("\nAvailable strategies are:")
-            for strategy in available_strategies:
-                print(f"- {strategy}")
-            return None
-
-    # Randomly select 9 strategies for the tournament
-    # selected_strategies = random.sample(list(strategies.keys()), min(9, len(strategies)))
+        return None, None
 
     strategy_points = {name: (0, 0) for name in selected_strategies} # total points, number of games
-
-    # Print the selected strategies
-    selected_strategies_str = '\n'.join(selected_strategies)
-    print(f"\nSelected strategies for this tournament: \n{selected_strategies_str}")
 
     # # Print the selected strategies
     # print("Selected strategies for this tournament:", selected_strategies)
@@ -91,7 +105,7 @@ def tournament(strategies, points_system, num_rounds, verbose, very_verbose, opp
             if verbose: print (f"\n\n{name1} vs {name2} num_rounds: {num_rounds}")
 
             for _ in range(num_rounds):
-                score1, score2 = play_round(strategies[name1], name1, strategies[name2], name2, history1, history2, points_system, very_verbose)
+                score1, score2 = play_round(all_strategies[name1], name1, all_strategies[name2], name2, history1, history2, very_verbose)
                 total_score1 += score1
                 total_score2 += score2
                 match_hands.append((history1[-1], history2[-1]))
@@ -188,6 +202,48 @@ def tournament(strategies, points_system, num_rounds, verbose, very_verbose, opp
 
     return results, sorted_strategies
 
+def print_results (results, sorted_strategies):
+    # Always print results 
+    print("\nTournament Results:")
+    # Find the longest strategy name
+    max_length = max(len(strategy) for match in results.keys() for strategy in match)
+    last_name1 = None  # Initialize a variable to keep track of the last 'name1'
+
+    # Format and print the results
+    for match, score in results.items():
+        name1, name2 = match
+        score1, score2, avg_score1, avg_score2, percent_diff = score
+        # percent_diff = (score1 - score2) / max(score1, score2) * 100 if max(score1, score2) > 0 else 0
+        # Check if 'name1' has changed since the last iteration
+        if last_name1 and name1 != last_name1:
+            print()  # Print an extra empty line
+        # note percent_diff is a string, not a number!
+        # print(f"{name1:{max_length}} vs {name2:{max_length}}: {score1:5} - {score2:5} (Avg: {avg_score1:.2f} - {avg_score2:.2f}) Diff: {percent_diff:.2f}%")
+        print(f"{name1:{max_length}} vs {name2:{max_length}}: {score1:5} - {score2:5} (Avg: {avg_score1:.2f} - {avg_score2:.2f}) {percent_diff}")
+        last_name1 = name1  # Update 'last_name1' for the next iteration
+
+    # Find the maximum points for formatting
+    max_points = max(total_points for _, (total_points, _, _) in sorted_strategies)
+
+    # Length for points formatting
+    max_points_length = len(str(max_points))
+
+    # Always print sorted strategies
+    print("\nSorted Strategies:")
+    for strategy, (total_points, avg_points, delta_avg_points) in sorted_strategies:
+        formatted_delta_avg_points = f", Delta Avg = {'{:=3d}'.format(int(delta_avg_points))}%" if not delta_avg_points == 0 else ""
+        # formatted_delta_avg_points = f", Delta Avg = {delta_avg_points: .0f}%" if not delta_avg_points == 0 else ""
+        string = f"{strategy:{max_length}}: Total Points = {total_points:{max_points_length}}, Avg Points/Game = {avg_points:.2f}{formatted_delta_avg_points}"
+        # Check if the strategy is "rl_strategy" and apply ANSI bold if true
+        if strategy == "rl_strategy":
+            formatted_string = f"\033[1m{string}\033[0m"
+        else:
+            formatted_string = string       
+        print (formatted_string) 
+
+    print(f"")
+    # for strategy, score in sorted_strategies:
+    #     print(f"{strategy}: {score}")
 
 def build_strategies_dict():
     # Initialize an empty strategies_dict
@@ -218,7 +274,7 @@ def build_strategies_dict():
 # Strategies dictionary
 # Automatically build the strategies dictionary
 # strategies_dict = {name: func for name, func in inspect.getmembers(strategies, inspect.isfunction)}
-strategies_dict = build_strategies_dict()
+# strategies_dict = build_strategies_dict()
 
 # # Points system for the Prisoner's Dilemma
 # points_system = {'CC': (3, 3), 'CD': (0, 5), 'DC': (5, 0), 'DD': (1, 1)}

@@ -8,3 +8,6 @@ POINTS_SYSTEM = {'CC': (3, 3), 'CD': (0, 5), 'DC': (5, 0), 'DD': (1, 1)}
     # S (for sucker’s payoff when being betrayed while cooperating oneself), 
     # P (for punishment when both players betray each other), and 
     # S < P < R < T and 2R > T + S
+
+# DEBUG = True
+DEBUG = False
