@@ -4,7 +4,7 @@ import argparse
 import sys
 from tournament import tournament, print_results, print_strategies
 from config import DEBUG
-
+import time
 
 class CustomArgumentParser(argparse.ArgumentParser):
     def error(self, message):
@@ -17,7 +17,7 @@ class CustomArgumentParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-def main(opponent_strategies, debug, verbose, very_verbose):
+def main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose):
 
     if debug or DEBUG:
         num_rounds = 200
@@ -26,14 +26,13 @@ def main(opponent_strategies, debug, verbose, very_verbose):
         num_rounds = 1_000
         max_strategies = 9
 
-    if very_verbose: verbose = True #so I don't need to check for both each time
     # Run the tournament and unpack the results
-    results, sorted_strategies = tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_verbose)
+    results, sorted_strategies = tournament(num_rounds, max_strategies, opponent_strategies, infinite_loop, no_bold, verbose, very_verbose)
 
     # Check if the variables are not empty
     if results and sorted_strategies:
         # Do something with the non-empty variables
-        print_results (results, sorted_strategies)
+        print_results (infinite_loop, no_bold, results, sorted_strategies)
         return
     else:
         print("\nTournament did not produce any results.\n")
@@ -51,6 +50,8 @@ def handle_arguments():
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose output.')
     parser.add_argument('-vv', '--very-verbose', action='store_true', default=False, help='Very verbose output. Includes ML output.')
     parser.add_argument('-p', '--print', action='store_true', default=False, help='Print all available strategies.')
+    parser.add_argument('-l', '--loop', action='store_true', default=False, help='Starts an infinite loop and prints ML performance to help debugging.')
+    parser.add_argument('-b', '--no-bold', action='store_true', default=False, help='Avoid printing in bold. Useful when you redirect output to file.')
     
     # Parse the arguments
     args = parser.parse_args()
@@ -65,12 +66,12 @@ def handle_arguments():
     # print(f"Against: {args.against}")
 
     # Return the parsed arguments as needed
-    return args.print, args.against, args.debug, args.verbose, args.very_verbose
+    return args.print, args.against, args.debug, args.loop, args.no_bold, args.verbose, args.very_verbose
 
 # Example of how to use this function
 if __name__ == "__main__":
 
-    print_strategies_flag, opponent_strategies, debug, verbose, very_verbose = handle_arguments()
+    print_strategies_flag, opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose = handle_arguments()
 
     if print_strategies_flag :
         print_strategies()
@@ -78,5 +79,14 @@ if __name__ == "__main__":
     else:
         # Run the main function with the specified verbosity level
         # sys.exit()
-        main(opponent_strategies, debug, verbose, very_verbose)
-        sys.exit()
+        if not infinite_loop:
+            main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose)
+            sys.exit()
+        else: 
+            while True:
+                # infinite loop doesn't allow any argument expect -d
+                verbose = False 
+                very_verbose = False
+                opponent_strategies = []
+                main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose)
+                time.sleep (1)

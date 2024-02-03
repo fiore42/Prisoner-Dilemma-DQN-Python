@@ -91,7 +91,7 @@ def select_strategies(all_strategies, max_strategies, opponent_strategies):
     
     return selected_strategies
 
-def tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_verbose):
+def tournament(num_rounds, max_strategies, opponent_strategies, infinite_loop, no_bold, verbose, very_verbose):
 
     results_temp = {}
     hands_played = {}
@@ -106,17 +106,25 @@ def tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_ve
 
         return None, None
 
+    if infinite_loop:
+        for name1 in selected_strategies:
+            if name1 != 'rl_strategy':
+                print(f'{name1}', end=' ')
+        print ("")
+        
     strategy_points = {name: (0, 0) for name in selected_strategies} # total points, number of games
 
     # # Print the selected strategies
     # print("Selected strategies for this tournament:", selected_strategies)
 
-    if not verbose: print("") # new line for all the dots 
+    if not verbose and not infinite_loop: print("") # new line for all the dots 
 
     # Play each pair of strategies against each other
     for name1 in selected_strategies:
         for name2 in selected_strategies:
-            if not verbose: print('.', end='')  # This will print a dot without adding a newline
+            if not verbose and not infinite_loop: 
+                print('.', end='')  # This will print a dot without adding a newline
+                sys.stdout.flush() # Flush stdout to avoid all this showing at once
             history1, history2 = [], []
             total_score1, total_score2 = 0, 0
             match_hands = []
@@ -137,15 +145,22 @@ def tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_ve
 
             if verbose: 
                 print(f"{name1} vs {name2} num_rounds: {num_rounds} score1: {total_score1} score2: {total_score2}")
+                print('    1 ', end='')
                 for i in range(len(history1)):
                     pair = history1[i] + history2[i]
                     # if pair in ["CC", "DC"]:
                     if pair in ["CD"]:
-                        print(f"\033[1m{pair}\033[0m", end=" ")
+                        if no_bold:
+                            print(f"{pair}", end=" ")
+                        else:
+                            print(f"\033[1m{pair}\033[0m", end=" ")
                     else:
                         print(pair, end=" ")
                     if (i + 1) % 20 == 0:
-                        print("")  # Newline character after every 20 pairs
+                        if i + 2 < len(history1):
+                            print(f"\n{i+2:5} ", end='') # Newline character after every 20 pairs
+                        else:
+                            print ("")
 
             # percent_diff = (total_score1 - total_score2) / max(total_score1, total_score2) * 100 if max(total_score1, total_score2) > 0 else 0
             # percent_diff = (total_score1 - total_score2) / total_score2 * 100 if total_score2 > 0 else 0
@@ -171,7 +186,7 @@ def tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_ve
             # strategy_points[name1] += total_score1
             # strategy_points[name2] += total_score2
 
-    if not verbose: print("") # new line for all the dots 
+    if not verbose and not infinite_loop: print("") # new line for all the dots 
 
     # for name, (total_points, games_played) in strategy_points.items():
     #     print(f"name: {name}: total_points: {total_points} games_played: {games_played}", file=sys.stderr)
@@ -224,9 +239,9 @@ def tournament(num_rounds, max_strategies, opponent_strategies, verbose, very_ve
 
     return results, sorted_strategies
 
-def print_results (results, sorted_strategies):
+def print_results (infinite_loop, no_bold, results, sorted_strategies):
     # Always print results 
-    print("\nTournament Results:")
+    if not infinite_loop: print("\nTournament Results:")
     # Find the longest strategy name
     max_length = max(len(strategy) for match in results.keys() for strategy in match)
     last_name1 = None  # Initialize a variable to keep track of the last 'name1'
@@ -238,10 +253,10 @@ def print_results (results, sorted_strategies):
         # percent_diff = (score1 - score2) / max(score1, score2) * 100 if max(score1, score2) > 0 else 0
         # Check if 'name1' has changed since the last iteration
         if last_name1 and name1 != last_name1:
-            print()  # Print an extra empty line
+            if not infinite_loop: print()  # Print an extra empty line
         # note percent_diff is a string, not a number!
         # print(f"{name1:{max_length}} vs {name2:{max_length}}: {score1:5} - {score2:5} (Avg: {avg_score1:.2f} - {avg_score2:.2f}) Diff: {percent_diff:.2f}%")
-        print(f"{name1:{max_length}} vs {name2:{max_length}}: {score1:5} - {score2:5} (Avg: {avg_score1:.2f} - {avg_score2:.2f}) {percent_diff}")
+        if not infinite_loop: print(f"{name1:{max_length}} vs {name2:{max_length}}: {score1:5} - {score2:5} (Avg: {avg_score1:.2f} - {avg_score2:.2f}) {percent_diff}")
         last_name1 = name1  # Update 'last_name1' for the next iteration
 
     # Find the maximum points for formatting
@@ -251,19 +266,24 @@ def print_results (results, sorted_strategies):
     max_points_length = len(str(max_points))
 
     # Always print sorted strategies
-    print("\nSorted Strategies:")
+    if not infinite_loop: print("\nSorted Strategies:")
     for strategy, (total_points, avg_points, delta_avg_points) in sorted_strategies:
         formatted_delta_avg_points = f", Delta Avg = {'{:=3d}'.format(int(delta_avg_points))}%" if not delta_avg_points == 0 else ""
         # formatted_delta_avg_points = f", Delta Avg = {delta_avg_points: .0f}%" if not delta_avg_points == 0 else ""
         string = f"{strategy:{max_length}}: Total Points = {total_points:{max_points_length}}, Avg Points/Game = {avg_points:.2f}{formatted_delta_avg_points}"
         # Check if the strategy is "rl_strategy" and apply ANSI bold if true
         if strategy == "rl_strategy":
-            formatted_string = f"\033[1m{string}\033[0m"
+            if no_bold:
+                formatted_string = f"{string}"
+            else:
+                formatted_string = f"\033[1m{string}\033[0m"
+            print (formatted_string) 
         else:
-            formatted_string = string       
-        print (formatted_string) 
+            if not infinite_loop: 
+                formatted_string = string       
+                print (formatted_string) 
 
-    print(f"")
+    if not infinite_loop: print(f"")
     # for strategy, score in sorted_strategies:
     #     print(f"{strategy}: {score}")
 
