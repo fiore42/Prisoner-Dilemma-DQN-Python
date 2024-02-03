@@ -26,6 +26,8 @@ Interestingly enough, outside of reinforcement_learning.py, the rest of the code
 - **Debug Mode**: Enables debug mode with the `-d` or `--debug` flag, leading to fewer strategies and rounds for quicker iterations.
 - **Verbose Output**: Supports verbose (`-v`) and very verbose (`-vv`) flags for additional debugging and operational insights, including machine learning output in the very verbose mode.
 - **Strategy Listing**: Use `-p` or `--print` to print all available strategies, assisting in custom strategy selection.
+- **Infinite Loop**: Use `-l` or `--loop` flags to enter an infinite loop that just shows the performance of the ML agent. To test performance in multiple arenas.
+- **No Bold**: Use `-b` or `--no-bold` flags to print without bold. Useful when you redirect output to file.
 
 ## Getting Started
 
@@ -77,6 +79,19 @@ To list all available strategies:
 ```bash
 python main.py -p
 ```
+
+To launch in loop mode:
+
+```bash
+python main.py -l
+```
+
+To print in plain text, without bold:
+
+```bash
+python main.py -b
+```
+
 
 ## Contributing
 
