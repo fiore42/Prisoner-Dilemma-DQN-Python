@@ -51,7 +51,7 @@ def main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbo
     # Check if the variables are not empty
     if results and sorted_strategies:
         # Do something with the non-empty variables
-        print_results (flags, results, sorted_strategies)
+        print_results (flags, hp, results, sorted_strategies)
         return
     else:
         print("\nTournament did not produce any results.\n")
@@ -69,7 +69,7 @@ def handle_arguments():
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose output.')
     parser.add_argument('-vv', '--very-verbose', action='store_true', default=False, help='Very verbose output. Includes ML output.')
     parser.add_argument('-p', '--print', action='store_true', default=False, help='Print all available strategies.')
-    parser.add_argument('-l', '--loop', action='store_true', default=False, help='Starts an infinite loop and prints ML performance to help debugging.')
+    parser.add_argument('-l', '--loop', action='store_true', default=False, help='Starts an infinite loop and prints ML performance to help debugging. Add -e to be able to fix opponents. Otherwise command line opponents are discarded.')
     parser.add_argument('-b', '--no-bold', action='store_true', default=False, help='Avoid printing in bold. Useful when you redirect output to file.')
     parser.add_argument('-e', '--explore', action='store_true', default=False, help='Explore the impact of changing ML hyperparameters.')
     
@@ -108,14 +108,24 @@ if __name__ == "__main__":
                     # infinite loop doesn't allow any argument expect -d
                     verbose = False 
                     very_verbose = False
-                    opponent_strategies = []
+                    if not explore:
+                        opponent_strategies = []
                     main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose)
                     time.sleep (1)
             if explore:
+                # grudger_recovery always_defect tit_for_tat_trustful random_strategy provocateur tit_for_tat_opposite_def tit_for_tat_suspicious alternate3and3 alternate_coop alternate_def
                 opponent_strategies = ['grudger_recovery','always_defect','tit_for_tat_trustful']
                 opponent_strategies.extend(['random_strategy','provocateur','tit_for_tat_opposite_def'])
                 opponent_strategies.extend(['tit_for_tat_suspicious','alternate3and3','alternate_coop','alternate_def'])
-                for lr in np.arange(0, 1.01, 0.05):  # Goes from 0 to 1 inclusive, in steps of 0.01
-                    for gamma in np.arange(0, 1.01, 0.05):
-                        print(f"LR: {lr:.2f}, GAMMA: {gamma:.2f}")
+                # first iteration with range 0_1 0_1 showed LR must be less than 0.20
+                # for lr in np.arange(0, 1.01, 0.05):  # Goes from 0 to 1 inclusive, in steps of 0.01
+                #     for gamma in np.arange(0, 1.01, 0.05):
+                # second iteration with range 0_1 0_1 showed LR must be less than 0.04
+                # so now we expand gamma from 20 elements to 100
+                # for lr in np.arange(0, 0.21, 0.01):  
+                #     for gamma in np.arange(0, 1.01, 0.05):
+                print (f"LR, GAMMA, DELTA, csv")
+                for lr in np.arange(0.005, 0.016, 0.001):  # Goes from 0 to 1 inclusive, in steps of 0.01
+                    for gamma in np.arange(0.75, 1.01, 0.01):
+                        print(f"LR: {lr:.3f}, GAMMA: {gamma:.3f}")
                         main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose, lr, gamma)

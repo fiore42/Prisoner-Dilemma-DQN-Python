@@ -248,7 +248,7 @@ def tournament(num_rounds, max_strategies, opponent_strategies, flags, verbose, 
 
     return results, sorted_strategies
 
-def print_results (flags, results, sorted_strategies):
+def print_results (flags, hp, results, sorted_strategies):
 
     infinite_loop = flags.infinite_loop
     no_bold = flags.no_bold
@@ -286,15 +286,17 @@ def print_results (flags, results, sorted_strategies):
         string = f"{strategy:{max_length}}: Total Points = {total_points:{max_points_length}}, Avg Points/Game = {avg_points:.2f}{formatted_delta_avg_points}"
         # Check if the strategy is "rl_strategy" and apply ANSI bold if true
         if strategy == "rl_strategy":
-            if no_bold:
+            if no_bold or explore:
                 formatted_string = f"{string}"
             else:
                 formatted_string = f"\033[1m{string}\033[0m"
             print (formatted_string) 
+            if explore:
+                print (f"{hp.lr:.3f}, {hp.gamma:.3f}, {delta_avg_points:.4f}, csv")
         else:
             if not infinite_loop and not explore: 
                 formatted_string = string       
-                print (formatted_string) 
+                print (formatted_string)
 
     if not infinite_loop: print(f"")
     # for strategy, score in sorted_strategies:

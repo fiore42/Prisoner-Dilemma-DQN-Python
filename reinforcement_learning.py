@@ -9,9 +9,10 @@ from collections import deque
 
 # Define Hyperparameters
 HISTORY_LENGTH = 5  # Length of history to consider
-GAMMA = 0.9          # Discount factor
-# LEARNING_RATE = 0.01
-LEARNING_RATE = 0.0001
+# GAMMA = 0.79          # this value has the lowest mean and stdev with heatmap.py
+GAMMA = 0.9          # Discount factor - this also has low mean and stdev with heatmap.py
+LEARNING_RATE = 0.01 # this value has the lowest mean and stdev with heatmap.py
+# LEARNING_RATE = 0.0001
 VALID_ACTIONS = 2 # Two possible actions: Cooperate or Defect
 INITIAL_BIAS_FOR_C = 0.1 # we want our network to have a preference for C
 # without a bias for C, initially the model could use D and trigger strategies 
