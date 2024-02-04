@@ -5,6 +5,8 @@ import sys
 from tournament import tournament, print_results, print_strategies
 from config import DEBUG
 import time
+import numpy as np
+from collections import namedtuple
 
 class CustomArgumentParser(argparse.ArgumentParser):
     def error(self, message):
@@ -17,7 +19,8 @@ class CustomArgumentParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-def main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose):
+# def main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose):
+def main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose, learning_rate=None, gamma=None):
 
     if debug or DEBUG:
         num_rounds = 200
@@ -26,13 +29,29 @@ def main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbo
         num_rounds = 1_000
         max_strategies = 9
 
-    # Run the tournament and unpack the results
-    results, sorted_strategies = tournament(num_rounds, max_strategies, opponent_strategies, infinite_loop, no_bold, verbose, very_verbose)
+    Flags = namedtuple('Flags', ['infinite_loop', 'no_bold', 'explore'])
+    if learning_rate is None and gamma is None:
+        flags = Flags(infinite_loop=infinite_loop, no_bold=no_bold, explore=False)
+    else:
+        flags = Flags(infinite_loop=infinite_loop, no_bold=no_bold, explore=True)
+
+    # print (flags)
+
+    HP = namedtuple('HP', ['lr', 'gamma'])
+
+
+    if flags.explore: # set Hyperparameters
+        hp = HP(lr=learning_rate,gamma=gamma)
+        # print (hp)
+    else:
+        hp = HP(lr=None,gamma=None)
+
+    results, sorted_strategies = tournament(num_rounds, max_strategies, opponent_strategies, flags, verbose, very_verbose, hp)
 
     # Check if the variables are not empty
     if results and sorted_strategies:
         # Do something with the non-empty variables
-        print_results (infinite_loop, no_bold, results, sorted_strategies)
+        print_results (flags, results, sorted_strategies)
         return
     else:
         print("\nTournament did not produce any results.\n")
@@ -52,6 +71,7 @@ def handle_arguments():
     parser.add_argument('-p', '--print', action='store_true', default=False, help='Print all available strategies.')
     parser.add_argument('-l', '--loop', action='store_true', default=False, help='Starts an infinite loop and prints ML performance to help debugging.')
     parser.add_argument('-b', '--no-bold', action='store_true', default=False, help='Avoid printing in bold. Useful when you redirect output to file.')
+    parser.add_argument('-e', '--explore', action='store_true', default=False, help='Explore the impact of changing ML hyperparameters.')
     
     # Parse the arguments
     args = parser.parse_args()
@@ -66,12 +86,12 @@ def handle_arguments():
     # print(f"Against: {args.against}")
 
     # Return the parsed arguments as needed
-    return args.print, args.against, args.debug, args.loop, args.no_bold, args.verbose, args.very_verbose
+    return args.print, args.against, args.debug, args.loop, args.no_bold, args.explore, args.verbose, args.very_verbose
 
 # Example of how to use this function
 if __name__ == "__main__":
 
-    print_strategies_flag, opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose = handle_arguments()
+    print_strategies_flag, opponent_strategies, debug, infinite_loop, no_bold, explore, verbose, very_verbose = handle_arguments()
 
     if print_strategies_flag :
         print_strategies()
@@ -79,14 +99,23 @@ if __name__ == "__main__":
     else:
         # Run the main function with the specified verbosity level
         # sys.exit()
-        if not infinite_loop:
+        if not infinite_loop and not explore:
             main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose)
             sys.exit()
         else: 
-            while True:
-                # infinite loop doesn't allow any argument expect -d
-                verbose = False 
-                very_verbose = False
-                opponent_strategies = []
-                main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose)
-                time.sleep (1)
+            if infinite_loop:
+                while True:
+                    # infinite loop doesn't allow any argument expect -d
+                    verbose = False 
+                    very_verbose = False
+                    opponent_strategies = []
+                    main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose)
+                    time.sleep (1)
+            if explore:
+                opponent_strategies = ['grudger_recovery','always_defect','tit_for_tat_trustful']
+                opponent_strategies.extend(['random_strategy','provocateur','tit_for_tat_opposite_def'])
+                opponent_strategies.extend(['tit_for_tat_suspicious','alternate3and3','alternate_coop','alternate_def'])
+                for lr in np.arange(0, 1.01, 0.05):  # Goes from 0 to 1 inclusive, in steps of 0.01
+                    for gamma in np.arange(0, 1.01, 0.05):
+                        print(f"LR: {lr:.2f}, GAMMA: {gamma:.2f}")
+                        main(opponent_strategies, debug, infinite_loop, no_bold, verbose, very_verbose, lr, gamma)

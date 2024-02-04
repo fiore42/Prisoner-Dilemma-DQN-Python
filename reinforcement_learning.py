@@ -84,10 +84,16 @@ class ReplayMemory:
 
 # Main Class for Prisoners Dilemma DQN
 class PrisonersDilemmaDQN:
-    def __init__(self):
+    def __init__(self,hp):
         self.model = DQN(HISTORY_LENGTH, VALID_ACTIONS, INITIAL_BIAS_FOR_C, INITIAL_BIAS_FOR_D) # Move model to device
         self.memory = ReplayMemory(10000)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=LEARNING_RATE)
+        if hp.lr is not None:
+            # we are in explore mode, let's use provided learning rate
+            # print (f"we are in explore mode, let's use provided learning rate: {hp.lr}")
+            self.optimizer = optim.Adam(self.model.parameters(), lr=hp.lr)
+        else:
+            # print (f"we are NOT in explore mode, let's use standard learning rate: {LEARNING_RATE}")
+            self.optimizer = optim.Adam(self.model.parameters(), lr=LEARNING_RATE)
         self.epsilon = INITIAL_EPSILON
         self.flag = 'white_flag' #if an opponent strikes first, we switch to pirate_flag
 
@@ -123,7 +129,7 @@ class PrisonersDilemmaDQN:
         else:  # my_action == 'D' and opponent_action == 'D'
             return 0  # Both defect (1 point)
 
-    def train_model(self, my_history, opponent_history, my_action, opponent_action, very_verbose):
+    def train_model(self, my_history, opponent_history, my_action, opponent_action, hp, very_verbose):
         if very_verbose: print(f"\n[train_model] my_action: {my_action} opponent_action: {opponent_action}")
 
         # Convert histories and actions to tensors
@@ -171,7 +177,12 @@ class PrisonersDilemmaDQN:
         # if very_verbose: print (f"model_next_state: {model_next_state}")
         max_next_q_values = model_next_state.max(1)[0].detach()
         # if very_verbose: print (f"next_state: {next_state}, max_next_q_values: {max_next_q_values}")
-        expected_q_values = torch.tensor(batch_reward) + (GAMMA * max_next_q_values)
+        if hp.gamma:
+            # we are in explore loop - let's use the provided gamma
+            #print (f"we are in explore loop - let's use the provided gamma: {hp.gamma}")
+            expected_q_values = torch.tensor(batch_reward) + (hp.gamma * max_next_q_values)
+        else:
+            expected_q_values = torch.tensor(batch_reward) + (GAMMA * max_next_q_values)
         # if very_verbose: print (f"expected_q_values: {expected_q_values}")
 
         # if very_verbose: print(f"current_q_values: {current_q_values.squeeze(1)} expected_q_values: {expected_q_values}")
@@ -186,7 +197,7 @@ class PrisonersDilemmaDQN:
 
         if very_verbose: print(f"Training loss: {loss.item()}")
 
-    def make_decision(self, explore_flag, my_history, opponent_history, very_verbose):
+    def make_decision(self, greedy_flag, my_history, opponent_history, very_verbose):
 
         if very_verbose: print(f"\n[make_decision] decision: {len(my_history)+1}")
 
@@ -245,7 +256,7 @@ class PrisonersDilemmaDQN:
                 print(f"we could explore - epsilon: {self.epsilon}")
                 print(f"opponent_history: {''.join(opponent_history[-10:])}")
 
-            if explore_flag and random.random() < self.epsilon:
+            if greedy_flag and random.random() < self.epsilon:
                 # so we know we have the "license" to explore, and we randomly decided to explore
                 # so we will return the opposite value to the prediction
                 if action_char == 'C':

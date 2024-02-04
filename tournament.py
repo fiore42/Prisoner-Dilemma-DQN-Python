@@ -9,29 +9,26 @@ from importlib import import_module
 from reinforcement_learning import PrisonersDilemmaDQN
 from config import POINTS_SYSTEM
 
-# Create a global instance of the DQN agent
-dqn_agent = PrisonersDilemmaDQN()
-
-def play_round(strategy1, name1, strategy2, name2, history1, history2, very_verbose):
+def play_round(dqn_agent, strategy1, name1, strategy2, name2, history1, history2, hp, very_verbose):
 
     if name1 == 'rl_strategy' and name2 == 'rl_strategy':
         # if RL strategy vs RL strategy, we only let one strategy explore, 
         # since it's exploration halves epsilon
-        explore1 = True
-        explore2 = False
-        move1 = strategy1(dqn_agent, explore1, history1, history2, very_verbose)  # Pass both histories to strategy1
-        move2 = strategy2(dqn_agent, explore2, history2, history1, very_verbose)  # Pass both histories to strategy2
-        dqn_agent.train_model(history1, history2, move1, move2, very_verbose) # when rl_strategy face itself we train only once
+        greedy1 = True
+        greedy2 = False
+        move1 = strategy1(dqn_agent, greedy1, history1, history2, very_verbose)  # Pass both histories to strategy1
+        move2 = strategy2(dqn_agent, greedy2, history2, history1, very_verbose)  # Pass both histories to strategy2
+        dqn_agent.train_model(history1, history2, move1, move2, hp, very_verbose) # when rl_strategy face itself we train only once
     elif name1 == 'rl_strategy':
-        explore1 = True
-        move1 = strategy1(dqn_agent, explore1, history1, history2, very_verbose)  # Pass both histories to strategy1
+        greedy1 = True
+        move1 = strategy1(dqn_agent, greedy1, history1, history2, very_verbose)  # Pass both histories to strategy1
         move2 = strategy2(history2, history1, very_verbose)  # Pass both histories to strategy2
-        dqn_agent.train_model(history1, history2, move1, move2, very_verbose) # when rl_strategy face itself we train only once
+        dqn_agent.train_model(history1, history2, move1, move2, hp, very_verbose) # when rl_strategy face itself we train only once
     elif name2 == 'rl_strategy':
-        explore2 = True
+        greedy2 = True
         move1 = strategy1(history1, history2, very_verbose)  # Pass both histories to strategy1
-        move2 = strategy2(dqn_agent, explore2, history2, history1, very_verbose)  # Pass both histories to strategy2
-        dqn_agent.train_model(history2, history1, move2, move1, very_verbose)
+        move2 = strategy2(dqn_agent, greedy2, history2, history1, very_verbose)  # Pass both histories to strategy2
+        dqn_agent.train_model(history2, history1, move2, move1, hp, very_verbose)
     else:
         move1 = strategy1(history1, history2, very_verbose)  # Pass both histories to strategy1
         move2 = strategy2(history2, history1, very_verbose)  # Pass both histories to strategy2
@@ -91,10 +88,20 @@ def select_strategies(all_strategies, max_strategies, opponent_strategies):
     
     return selected_strategies
 
-def tournament(num_rounds, max_strategies, opponent_strategies, infinite_loop, no_bold, verbose, very_verbose):
+def tournament(num_rounds, max_strategies, opponent_strategies, flags, verbose, very_verbose, hp):
+
+
+    # Create a global instance of the DQN agent
+    dqn_agent = PrisonersDilemmaDQN(hp)
+
+    # print (hp)
 
     results_temp = {}
     hands_played = {}
+
+    infinite_loop = flags.infinite_loop
+    no_bold = flags.no_bold
+    explore = flags.explore
 
     # Automatically build the strategies dictionary
     all_strategies = build_strategies_dict()
@@ -103,7 +110,6 @@ def tournament(num_rounds, max_strategies, opponent_strategies, infinite_loop, n
 
     if selected_strategies is None:
         # print(f"\nselected_strategies is None, return")
-
         return None, None
 
     if infinite_loop:
@@ -122,6 +128,9 @@ def tournament(num_rounds, max_strategies, opponent_strategies, infinite_loop, n
     # Play each pair of strategies against each other
     for name1 in selected_strategies:
         for name2 in selected_strategies:
+            if explore and (name1 != 'rl_strategy'):
+                # we don't need to do all A x B in exploratory mode
+                break
             if not verbose and not infinite_loop: 
                 print('.', end='')  # This will print a dot without adding a newline
                 sys.stdout.flush() # Flush stdout to avoid all this showing at once
@@ -133,7 +142,7 @@ def tournament(num_rounds, max_strategies, opponent_strategies, infinite_loop, n
             if verbose: print (f"\n\n{name1} vs {name2} num_rounds: {num_rounds}")
 
             for _ in range(num_rounds):
-                score1, score2 = play_round(all_strategies[name1], name1, all_strategies[name2], name2, history1, history2, very_verbose)
+                score1, score2 = play_round(dqn_agent, all_strategies[name1], name1, all_strategies[name2], name2, history1, history2, hp, very_verbose)
                 total_score1 += score1
                 total_score2 += score2
                 match_hands.append((history1[-1], history2[-1]))
@@ -239,8 +248,12 @@ def tournament(num_rounds, max_strategies, opponent_strategies, infinite_loop, n
 
     return results, sorted_strategies
 
-def print_results (infinite_loop, no_bold, results, sorted_strategies):
-    # Always print results 
+def print_results (flags, results, sorted_strategies):
+
+    infinite_loop = flags.infinite_loop
+    no_bold = flags.no_bold
+    explore = flags.explore
+
     if not infinite_loop: print("\nTournament Results:")
     # Find the longest strategy name
     max_length = max(len(strategy) for match in results.keys() for strategy in match)
@@ -279,7 +292,7 @@ def print_results (infinite_loop, no_bold, results, sorted_strategies):
                 formatted_string = f"\033[1m{string}\033[0m"
             print (formatted_string) 
         else:
-            if not infinite_loop: 
+            if not infinite_loop and not explore: 
                 formatted_string = string       
                 print (formatted_string) 
 

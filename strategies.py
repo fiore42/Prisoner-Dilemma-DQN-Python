@@ -1,6 +1,7 @@
 
-def rl_strategy(dqn_agent, explore_flag, myHistory, opponentHistory, very_verbose):
-    action = dqn_agent.make_decision(explore_flag, myHistory, opponentHistory, very_verbose)
+def rl_strategy(dqn_agent, greedy_flag, myHistory, opponentHistory, very_verbose):
+    # greedy_flag tells make_decision to explore/exploit or just exploit
+    action = dqn_agent.make_decision(greedy_flag, myHistory, opponentHistory, very_verbose)
     return action
 
 def always_cooperate(myHistory, opponentHistory, very_verbose):
